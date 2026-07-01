@@ -1,0 +1,79 @@
+import { Worker, Job } from 'bullmq';
+import IORedis from 'ioredis';
+import { prisma } from '@frameon/database';
+import { VideoRenderer } from '@frameon/renderer';
+import { Script } from '@frameon/shared';
+import * as path from 'path';
+
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+
+const renderer = new VideoRenderer();
+
+const worker = new Worker('video-render', async (job: Job) => {
+  const { videoId } = job.data;
+
+  const video = await prisma.video.findUnique({ where: { id: videoId } });
+  
+  if (!video || !video.script) {
+    throw new Error(`Video or script not found for id ${videoId}`);
+  }
+
+  await prisma.video.update({
+    where: { id: videoId },
+    data: { status: 'rendering' }
+  });
+
+  try {
+    // Generate simple HTML using the template package or simple inline string
+    // For demo purposes, we build a simple HTML here. In reality, it calls @frameon/templates
+    const script = video.script as unknown as Script;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;}
+          h1 { font-size: 80px; }
+        </style>
+      </head>
+      <body>
+        <div>
+          <h1>${script.title}</h1>
+          <p style="font-size: 40px">${script.hook}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const outputPath = path.join('/tmp', `${videoId}.mp4`);
+    
+    await renderer.render(script, html, outputPath);
+
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'completed', videoUrl: outputPath }
+    });
+    
+    console.log(`Rendered video ${videoId} to ${outputPath}`);
+
+  } catch (error) {
+    console.error(`Failed to render video ${videoId}`, error);
+    await prisma.video.update({
+      where: { id: videoId },
+      data: { status: 'failed' }
+    });
+    throw error;
+  }
+}, { connection });
+
+worker.on('completed', job => {
+  console.log(`Job ${job.id} completed!`);
+});
+
+worker.on('failed', (job, err) => {
+  console.error(`Job ${job?.id} failed with ${err.message}`);
+});
+
+console.log('Worker is running and waiting for jobs...');
