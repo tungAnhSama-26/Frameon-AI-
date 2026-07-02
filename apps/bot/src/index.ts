@@ -56,9 +56,8 @@ bot.on('message:text', async (ctx) => {
   // Treat standard greetings or commands as a trigger to show the Web App button
   if (['/start', '/menu', '/app', 'hi', 'hello', 'menu', 'app', 'chào'].includes(lowerText)) {
     const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
-    const keyboard = new Keyboard()
-      .webApp('Mở Ứng Dụng Frameon', webAppUrl)
-      .resized();
+    const keyboard = new InlineKeyboard()
+      .webApp('Mở Ứng Dụng Frameon', webAppUrl);
 
     return ctx.reply('👋 Chào mừng bạn đến với Frameon AI!\n\nHãy nhấn nút bên dưới để mở ứng dụng và tạo video, hoặc bạn có thể gửi trực tiếp một chủ đề (topic) bất kỳ cho mình ở đây nhé.', {
       reply_markup: keyboard,
