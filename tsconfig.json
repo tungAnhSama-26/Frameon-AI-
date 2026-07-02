@@ -9,6 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "ignoreDeprecations": "6.0",
+    "rootDir": ".",
     "baseUrl": ".",
     "paths": {
       "@frameon/*": ["packages/*/src", "apps/*/src"]
@@ -20,6 +21,7 @@
     "dist"
   ],
   "ts-node": {
-    "require": ["tsconfig-paths/register", "dotenv/config"]
+    "require": ["tsconfig-paths/register", "dotenv/config"],
+    "transpileOnly": true
   }
 }

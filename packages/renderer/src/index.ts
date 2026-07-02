@@ -5,6 +5,10 @@ import { Script } from '@frameon/shared';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Fix fluent-ffmpeg by providing static binary
+const ffmpegStatic = require('ffmpeg-static');
+ffmpeg.setFfmpegPath(ffmpegStatic);
+
 export class VideoRenderer {
   constructor(private readonly width = 1080, private readonly height = 1920, private readonly fps = 30) {}
 

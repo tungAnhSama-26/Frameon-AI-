@@ -7,15 +7,17 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "dev": "concurrently \"npm run dev -w @frameon/api\" \"npm run dev -w @frameon/bot\" \"npm run dev -w @frameon/scheduler\" \"npm run dev -w @frameon/worker\" \"npm run dev -w @frameon/miniapp\"",
+    "dev": "concurrently \"npm run dev -w @frameon/api\" \"npm run dev -w @frameon/bot\" \"npm run dev -w @frameon/miniapp\" \"npm run dev -w @frameon/worker\"",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
     "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
 }

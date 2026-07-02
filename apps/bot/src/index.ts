@@ -1,20 +1,21 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
 
 import { Bot, InlineKeyboard, Keyboard } from 'grammy';
 import { AIGenerator } from '@frameon/ai';
 import { prisma } from '@frameon/database';
 
 const botToken = process.env.BOT_TOKEN || '';
-const openaiKey = process.env.OPENAI_API_KEY || '';
+const geminiKey = process.env.GEMINI_API_KEY || '';
 
-if (!botToken || !openaiKey) {
-  console.warn('BOT_TOKEN or OPENAI_API_KEY is missing');
+if (!botToken || !geminiKey) {
+  console.warn('BOT_TOKEN or GEMINI_API_KEY is missing');
 }
+console.log('Using Bot Token:', botToken);
 
 const bot = new Bot(botToken);
-const ai = new AIGenerator(openaiKey);
+const ai = new AIGenerator(geminiKey);
 
 
 
@@ -128,13 +129,25 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
 
     if (!ctx.chat) return;
 
-    await ctx.api.editMessageText(
-      ctx.chat.id, 
-      loadingMsg.message_id, 
-      `✅ **Kịch bản đã hoàn tất!**\n\n🎯 **Hook (Mở bài):** ${script.hook}\n\n🎥 Video đang được đưa vào hàng đợi để render tự động. ID: ${video.id}`
-    );
+    let scriptText = `✅ **Kịch bản đã hoàn tất!**\n\n🎯 **Hook (Mở bài):** ${script.hook}\n\n`;
+    script.scenes.forEach((scene: any, i: number) => {
+      scriptText += `🎬 **Cảnh ${i + 1} (${scene.duration}s):**\n- Hành động: ${scene.text}\n- Hình ảnh: ${scene.visualPrompt || 'Không có'}\n\n`;
+    });
+    scriptText += `🎙 **Lời đọc (Narration):** ${script.narration}\n\n`;
+    scriptText += `🔔 **Kêu gọi hành động (CTA):** ${script.cta}\n\n`;
+    scriptText += `🎥 Video đang được đưa vào hàng đợi để render tự động. ID: ${video.id}`;
 
-    // TODO: Send to BullMQ queue here
+    await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, scriptText, { parse_mode: 'Markdown' });
+
+    // Send to BullMQ queue
+    const { Queue } = require('bullmq');
+    const IORedis = require('ioredis');
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+    const videoQueue = new Queue('video-render', { connection });
+    
+    await videoQueue.add('render', { videoId: video.id });
+    console.log(`Added video ${video.id} to queue`);
 
   } catch (error) {
     console.error(error);

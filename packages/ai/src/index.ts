@@ -6,12 +6,15 @@ export class AIGenerator {
   private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({ 
+      apiKey,
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+    });
   }
 
   async generateTitles(topic: string): Promise<string[]> {
     const completion = await this.openai.chat.completions.parse({
-      model: 'gpt-4o-2024-08-06',
+      model: 'gemini-2.5-flash',
       messages: [
         {
           role: 'system',
@@ -34,7 +37,7 @@ export class AIGenerator {
 
   async generateScript(title: string): Promise<Script> {
     const completion = await this.openai.chat.completions.parse({
-      model: 'gpt-4o-2024-08-06',
+      model: 'gemini-2.5-flash',
       messages: [
         {
           role: 'system',

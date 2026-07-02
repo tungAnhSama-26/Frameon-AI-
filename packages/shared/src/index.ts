@@ -14,7 +14,7 @@ export const SceneSchema = z.object({
   id: z.string(),
   text: z.string(),
   duration: z.number().min(1),
-  visualPrompt: z.string().optional(),
+  visualPrompt: z.string().nullable(),
 });
 
 export const ScriptSchema = z.object({

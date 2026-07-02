@@ -5,13 +5,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/index.ts"
+    "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "bullmq": "^5.7.8",
-    "ioredis": "^5.4.1",
-    "@frameon/shared": "*",
+    "@frameon/database": "*",
     "@frameon/renderer": "*",
-    "@frameon/database": "*"
+    "@frameon/shared": "*",
+    "bullmq": "^5.7.8",
+    "grammy": "^1.44.0",
+    "ioredis": "^5.4.1"
   }
 }

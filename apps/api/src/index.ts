@@ -1,14 +1,13 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: true });
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { prisma } from '@frameon/database';
 import { AIGenerator } from '@frameon/ai';
 
-const openaiKey = process.env.OPENAI_API_KEY || '';
-const ai = new AIGenerator(openaiKey);
+const ai = new AIGenerator(process.env.GEMINI_API_KEY || '');
 
 const fastify = Fastify({
   logger: true

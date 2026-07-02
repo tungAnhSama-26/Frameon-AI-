@@ -50,7 +50,8 @@ const worker = new Worker('video-render', async (job: Job) => {
       </html>
     `;
 
-    const outputPath = path.join('/tmp', `${videoId}.mp4`);
+    const os = require('os');
+    const outputPath = path.join(os.tmpdir(), `${videoId}.mp4`);
     
     await renderer.render(script, html, outputPath);
 
@@ -60,6 +61,20 @@ const worker = new Worker('video-render', async (job: Job) => {
     });
     
     console.log(`Rendered video ${videoId} to ${outputPath}`);
+
+    // Send back to Telegram if we have user
+    const user = await prisma.user.findUnique({ where: { id: video.userId } });
+    if (user && user.telegramId) {
+      const { Bot, InputFile } = require('grammy');
+      const botToken = process.env.BOT_TOKEN;
+      if (botToken) {
+        const bot = new Bot(botToken);
+        await bot.api.sendVideo(user.telegramId, new InputFile(outputPath), {
+          caption: `🎉 Video của bạn đã sẵn sàng!\n\n🎬 **Chủ đề:** ${video.topic}`
+        });
+        console.log(`Sent video to user ${user.telegramId}`);
+      }
+    }
 
   } catch (error) {
     console.error(`Failed to render video ${videoId}`, error);
