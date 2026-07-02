@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { Sparkles, Video, Clapperboard, Send, ImagePlay } from 'lucide-react';
+import { Sparkles, Video, Clapperboard, Send, ImagePlay, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import './index.css';
 
 const TEMPLATES = [
@@ -10,10 +10,19 @@ const TEMPLATES = [
   { id: 'meme', name: 'Meme/Humor', icon: <ImagePlay size={24} /> },
 ];
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 function App() {
   const [topic, setTopic] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('tech_news');
   const [isReady, setIsReady] = useState(false);
+  
+  // App states: 'input' | 'loading_titles' | 'select_title' | 'loading_script' | 'result'
+  const [appState, setAppState] = useState<'input' | 'loading_titles' | 'select_title' | 'loading_script' | 'result'>('input');
+  
+  const [titles, setTitles] = useState<string[]>([]);
+  const [selectedTitle, setSelectedTitle] = useState('');
+  const [script, setScript] = useState<any>(null);
 
   useEffect(() => {
     WebApp.ready();
@@ -21,19 +30,124 @@ function App() {
     setIsReady(true);
   }, []);
 
-  const handleSubmit = () => {
+  const handleGenerateTitles = async () => {
     if (!topic.trim()) {
       WebApp.showAlert('Please enter a topic first!');
       return;
     }
     
-    // Send data back to the Telegram bot
-    WebApp.sendData(JSON.stringify({
-      action: 'generate_video',
-      topic,
-      template: selectedTemplate
-    }));
+    setAppState('loading_titles');
+    try {
+      const res = await fetch(`${API_URL}/generate/titles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+      
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
+      setTitles(data.titles);
+      setAppState('select_title');
+    } catch (err: any) {
+      WebApp.showAlert('Failed to generate titles: ' + err.message);
+      setAppState('input');
+    }
   };
+
+  const handleGenerateScript = async (title: string) => {
+    setSelectedTitle(title);
+    setAppState('loading_script');
+    
+    try {
+      const res = await fetch(`${API_URL}/generate/script`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
+      setScript(data.script);
+      setAppState('result');
+    } catch (err: any) {
+      WebApp.showAlert('Failed to generate script: ' + err.message);
+      setAppState('select_title');
+    }
+  };
+
+  if (appState === 'result') {
+    return (
+      <div className="app-container">
+        <div className="glass-card animate-slide-up">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <CheckCircle2 color="#4ade80" size={32} />
+            <h2 style={{ margin: 0 }}>Script Generated!</h2>
+          </div>
+          
+          <h3 style={{ color: '#fff', marginBottom: '8px' }}>{selectedTitle}</h3>
+          
+          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '12px', marginTop: '16px', fontSize: '14px', lineHeight: '1.6' }}>
+            <p><strong>Hook:</strong> {script?.hook}</p>
+            <p><strong>Body:</strong> {script?.body}</p>
+            <p><strong>CTA:</strong> {script?.callToAction}</p>
+            <p><strong>Visuals:</strong> {script?.visuals}</p>
+          </div>
+          
+          <button 
+            className="btn-primary" 
+            style={{ marginTop: '24px' }}
+            onClick={() => setAppState('input')}
+          >
+            Create Another Video
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (appState === 'select_title') {
+    return (
+      <div className="app-container">
+        <button className="btn-icon" onClick={() => setAppState('input')} style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', cursor: 'pointer' }}>
+          <ArrowLeft size={20} /> Back
+        </button>
+        
+        <div className="animate-slide-up">
+          <h2>Select a Title</h2>
+          <p className="subtitle">Pick the best title for your video</p>
+        </div>
+
+        <div className="glass-card animate-slide-up delay-1">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {titles.map((title, idx) => (
+              <button 
+                key={idx}
+                className="btn-primary"
+                style={{ background: 'rgba(255,255,255,0.1)', textAlign: 'left', height: 'auto', padding: '16px' }}
+                onClick={() => handleGenerateScript(title)}
+              >
+                {title}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (appState === 'loading_titles' || appState === 'loading_script') {
+    return (
+      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <Loader2 className="animate-spin" size={48} color="#fff" />
+        <h2 style={{ marginTop: '16px' }}>
+          {appState === 'loading_titles' ? 'Generating Titles...' : 'Writing Script...'}
+        </h2>
+        <p className="subtitle">Please wait a moment</p>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -75,11 +189,11 @@ function App() {
 
         <button 
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={handleGenerateTitles}
           disabled={!topic.trim() || !isReady}
         >
           <Send size={20} />
-          Generate Video
+          Generate Titles
         </button>
       </div>
     </div>

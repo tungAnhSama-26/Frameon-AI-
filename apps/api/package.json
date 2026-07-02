@@ -8,6 +8,7 @@
     "dev": "ts-node src/index.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@frameon/database": "*",
     "@frameon/shared": "*",
     "fastify": "^5.9.0"
