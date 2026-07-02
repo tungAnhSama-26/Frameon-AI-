@@ -17,7 +17,44 @@ const bot = new Bot(botToken);
 const ai = new AIGenerator(openaiKey);
 
 bot.command('start', (ctx) => {
-  ctx.reply('Welcome to Frameon AI! Send me a topic to generate a short-form video.');
+  const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
+  
+  const keyboard = new InlineKeyboard()
+    .webApp('Launch Frameon AI App', webAppUrl);
+
+  ctx.reply('Welcome to Frameon AI! Open the app to select a template and generate your video, or just send me a topic.', {
+    reply_markup: keyboard,
+  });
+});
+
+bot.on('message:web_app_data', async (ctx) => {
+  const data = JSON.parse(ctx.message.web_app_data.data);
+  
+  if (data.action === 'generate_video') {
+    const topic = data.topic;
+    const template = data.template;
+    
+    const loadingMsg = await ctx.reply(`🤖 Generating titles for topic: "${topic}" using template: ${template}...`);
+    
+    try {
+      const titles = await ai.generateTitles(topic);
+      
+      const keyboard = new InlineKeyboard();
+      titles.forEach((title: string, index: number) => {
+        keyboard.text(title.substring(0, 30) + '...', `select_title:${index}`).row();
+      });
+
+      (global as any).tempTitles = titles;
+      (global as any).tempTopic = topic;
+
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, 'Select a title for your video:', {
+        reply_markup: keyboard,
+      });
+    } catch (error) {
+      console.error(error);
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Failed to generate titles. Try again later.');
+    }
+  }
 });
 
 bot.on('message:text', async (ctx) => {
