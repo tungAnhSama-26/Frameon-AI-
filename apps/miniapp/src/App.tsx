@@ -4,10 +4,10 @@ import { Sparkles, Video, Clapperboard, Send, ImagePlay, Loader2, ArrowLeft, Che
 import './index.css';
 
 const TEMPLATES = [
-  { id: 'tech_news', name: 'Tech News', icon: <Video size={24} /> },
-  { id: 'storytelling', name: 'Storytelling', icon: <Clapperboard size={24} /> },
-  { id: 'educational', name: 'Educational', icon: <Sparkles size={24} /> },
-  { id: 'meme', name: 'Meme/Humor', icon: <ImagePlay size={24} /> },
+  { id: 'tech_news', name: 'Tin tức Công nghệ', icon: <Video size={24} /> },
+  { id: 'storytelling', name: 'Kể chuyện', icon: <Clapperboard size={24} /> },
+  { id: 'educational', name: 'Giáo dục', icon: <Sparkles size={24} /> },
+  { id: 'meme', name: 'Hài hước/Meme', icon: <ImagePlay size={24} /> },
 ];
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -32,7 +32,7 @@ function App() {
 
   const handleGenerateTitles = async () => {
     if (!topic.trim()) {
-      WebApp.showAlert('Please enter a topic first!');
+      WebApp.showAlert('Vui lòng nhập chủ đề trước nhé!');
       return;
     }
     
@@ -50,7 +50,7 @@ function App() {
       setTitles(data.titles);
       setAppState('select_title');
     } catch (err: any) {
-      WebApp.showAlert('Failed to generate titles: ' + err.message);
+      WebApp.showAlert('Lỗi khi tạo tiêu đề: ' + err.message);
       setAppState('input');
     }
   };
@@ -72,7 +72,7 @@ function App() {
       setScript(data.script);
       setAppState('result');
     } catch (err: any) {
-      WebApp.showAlert('Failed to generate script: ' + err.message);
+      WebApp.showAlert('Lỗi khi tạo kịch bản: ' + err.message);
       setAppState('select_title');
     }
   };
@@ -83,16 +83,16 @@ function App() {
         <div className="glass-card animate-slide-up">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <CheckCircle2 color="#4ade80" size={32} />
-            <h2 style={{ margin: 0 }}>Script Generated!</h2>
+            <h2 style={{ margin: 0 }}>Đã tạo Kịch Bản!</h2>
           </div>
           
           <h3 style={{ color: '#fff', marginBottom: '8px' }}>{selectedTitle}</h3>
           
           <div style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '12px', marginTop: '16px', fontSize: '14px', lineHeight: '1.6' }}>
-            <p><strong>Hook:</strong> {script?.hook}</p>
-            <p><strong>Body:</strong> {script?.body}</p>
-            <p><strong>CTA:</strong> {script?.callToAction}</p>
-            <p><strong>Visuals:</strong> {script?.visuals}</p>
+            <p><strong>Mở bài (Hook):</strong> {script?.hook}</p>
+            <p><strong>Nội dung:</strong> {script?.body}</p>
+            <p><strong>Kêu gọi HĐ (CTA):</strong> {script?.callToAction}</p>
+            <p><strong>Hình ảnh:</strong> {script?.visuals}</p>
           </div>
           
           <button 
@@ -100,7 +100,7 @@ function App() {
             style={{ marginTop: '24px' }}
             onClick={() => setAppState('input')}
           >
-            Create Another Video
+            Tạo Video Khác
           </button>
         </div>
       </div>
@@ -111,12 +111,12 @@ function App() {
     return (
       <div className="app-container">
         <button className="btn-icon" onClick={() => setAppState('input')} style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', cursor: 'pointer' }}>
-          <ArrowLeft size={20} /> Back
+          <ArrowLeft size={20} /> Quay lại
         </button>
         
         <div className="animate-slide-up">
-          <h2>Select a Title</h2>
-          <p className="subtitle">Pick the best title for your video</p>
+          <h2>Chọn một tiêu đề</h2>
+          <p className="subtitle">Lựa chọn tiêu đề ấn tượng nhất cho video của bạn</p>
         </div>
 
         <div className="glass-card animate-slide-up delay-1">
@@ -142,9 +142,9 @@ function App() {
       <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <Loader2 className="animate-spin" size={48} color="#fff" />
         <h2 style={{ marginTop: '16px' }}>
-          {appState === 'loading_titles' ? 'Generating Titles...' : 'Writing Script...'}
+          {appState === 'loading_titles' ? 'Đang tạo tiêu đề...' : 'Đang viết kịch bản...'}
         </h2>
-        <p className="subtitle">Please wait a moment</p>
+        <p className="subtitle">Vui lòng đợi một lát</p>
       </div>
     );
   }
@@ -153,16 +153,16 @@ function App() {
     <div className="app-container">
       <div className="animate-slide-up">
         <h1>Frameon AI</h1>
-        <p className="subtitle">Create short-form videos with AI instantly</p>
+        <p className="subtitle">Tạo video ngắn cực nhanh với AI</p>
       </div>
 
       <div className="glass-card animate-slide-up delay-1">
-        <h2>What's your topic?</h2>
+        <h2>Bạn muốn làm về chủ đề gì?</h2>
         <div className="input-group">
           <input
             type="text"
             className="input-field"
-            placeholder="e.g., The history of AI, Top 5 space facts..."
+            placeholder="VD: Bí ẩn vũ trụ, Sự tích ngày Tết..."
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             maxLength={100}
@@ -171,7 +171,7 @@ function App() {
       </div>
 
       <div className="glass-card animate-slide-up delay-2">
-        <h2>Choose Template</h2>
+        <h2>Chọn Mẫu Video (Template)</h2>
         <div className="template-grid">
           {TEMPLATES.map((tmpl) => (
             <div
@@ -193,7 +193,7 @@ function App() {
           disabled={!topic.trim() || !isReady}
         >
           <Send size={20} />
-          Generate Titles
+          Tạo Video Ngay
         </button>
       </div>
     </div>

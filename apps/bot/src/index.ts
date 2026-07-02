@@ -25,7 +25,7 @@ bot.on('message:web_app_data', async (ctx) => {
     const topic = data.topic;
     const template = data.template;
     
-    const loadingMsg = await ctx.reply(`🤖 Generating titles for topic: "${topic}" using template: ${template}...`);
+    const loadingMsg = await ctx.reply(`🤖 Đang tạo các tiêu đề hấp dẫn cho chủ đề: "${topic}"...`);
     
     try {
       const titles = await ai.generateTitles(topic);
@@ -38,12 +38,12 @@ bot.on('message:web_app_data', async (ctx) => {
       (global as any).tempTitles = titles;
       (global as any).tempTopic = topic;
 
-      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, 'Select a title for your video:', {
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '👇 Vui lòng chọn một tiêu đề cho video của bạn:', {
         reply_markup: keyboard,
       });
     } catch (error) {
       console.error(error);
-      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Failed to generate titles. Try again later.');
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Đã có lỗi xảy ra khi tạo tiêu đề. Vui lòng thử lại sau.');
     }
   }
 });
@@ -56,16 +56,16 @@ bot.on('message:text', async (ctx) => {
   if (['/start', '/menu', '/app', 'hi', 'hello', 'menu', 'app', 'chào'].includes(lowerText)) {
     const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
     const keyboard = new Keyboard()
-      .webApp('Launch Frameon AI App', webAppUrl)
+      .webApp('Mở Ứng Dụng Frameon', webAppUrl)
       .resized();
 
-    return ctx.reply('Welcome to Frameon AI! Open the app to select a template and generate your video, or just send me a topic directly.', {
+    return ctx.reply('👋 Chào mừng bạn đến với Frameon AI!\n\nHãy nhấn nút bên dưới để mở ứng dụng và tạo video, hoặc bạn có thể gửi trực tiếp một chủ đề (topic) bất kỳ cho mình ở đây nhé.', {
       reply_markup: keyboard,
     });
   }
 
   const topic = text;
-  const loadingMsg = await ctx.reply('🤖 Generating titles...');
+  const loadingMsg = await ctx.reply('🤖 Đang suy nghĩ tiêu đề...');
 
   try {
     const titles = await ai.generateTitles(topic);
@@ -96,12 +96,12 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
   const topic = (global as any).tempTopic as string;
 
   if (!titles || !titles[index]) {
-    return ctx.answerCallbackQuery('Session expired. Please send a new topic.');
+    return ctx.answerCallbackQuery('⏳ Phiên làm việc đã hết hạn. Vui lòng gửi lại chủ đề mới.');
   }
 
   const selectedTitle = titles[index];
   await ctx.answerCallbackQuery();
-  const loadingMsg = await ctx.reply(`🎬 Selected: "${selectedTitle}"\nGenerating script...`);
+  const loadingMsg = await ctx.reply(`🎬 Đã chọn: "${selectedTitle}"\n\n📝 Đang viết kịch bản chi tiết...`);
 
   try {
     const script = await ai.generateScript(selectedTitle);
@@ -131,7 +131,7 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
     await ctx.api.editMessageText(
       ctx.chat.id, 
       loadingMsg.message_id, 
-      `✅ Script generated successfully!\n\n**Hook:** ${script.hook}\n\nVideo is now queued for rendering. ID: ${video.id}`
+      `✅ **Kịch bản đã hoàn tất!**\n\n🎯 **Hook (Mở bài):** ${script.hook}\n\n🎥 Video đang được đưa vào hàng đợi để render tự động. ID: ${video.id}`
     );
 
     // TODO: Send to BullMQ queue here
@@ -139,7 +139,7 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
   } catch (error) {
     console.error(error);
     if (ctx.chat) {
-      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Failed to generate script.');
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Đã có lỗi xảy ra khi tạo kịch bản.');
     }
   }
 });

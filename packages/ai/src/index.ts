@@ -15,7 +15,7 @@ export class AIGenerator {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert short-form video producer. Generate 5-10 highly engaging and viral titles for a video based on the user topic.',
+          content: 'You are an expert short-form video producer. Generate 5-10 highly engaging and viral titles for a video based on the user topic. IMPORTANT: You MUST generate the titles in the exact SAME LANGUAGE as the user\'s topic (e.g. if the topic is in Vietnamese, generate Vietnamese titles).',
         },
         {
           role: 'user',
@@ -38,7 +38,7 @@ export class AIGenerator {
       messages: [
         {
           role: 'system',
-          content: 'You are a master scriptwriter for TikTok and YouTube Shorts. Write an engaging video script with a hook, a series of short visual scenes, narration text, and a Call To Action (CTA).',
+          content: 'You are a master scriptwriter for TikTok and YouTube Shorts. Write an engaging video script with a hook, a series of short visual scenes, narration text, and a Call To Action (CTA). IMPORTANT: You MUST write the script in the exact SAME LANGUAGE as the video title.',
         },
         {
           role: 'user',
