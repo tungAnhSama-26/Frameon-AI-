@@ -16,17 +16,7 @@ if (!botToken || !openaiKey) {
 const bot = new Bot(botToken);
 const ai = new AIGenerator(openaiKey);
 
-bot.command('start', (ctx) => {
-  const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
-  
-  const keyboard = new Keyboard()
-    .webApp('Launch Frameon AI App', webAppUrl)
-    .resized();
 
-  ctx.reply('Welcome to Frameon AI! Open the app to select a template and generate your video, or just send me a topic.', {
-    reply_markup: keyboard,
-  });
-});
 
 bot.on('message:web_app_data', async (ctx) => {
   const data = JSON.parse(ctx.message.web_app_data.data);
@@ -59,7 +49,22 @@ bot.on('message:web_app_data', async (ctx) => {
 });
 
 bot.on('message:text', async (ctx) => {
-  const topic = ctx.message.text;
+  const text = ctx.message.text.trim();
+  const lowerText = text.toLowerCase();
+  
+  // Treat standard greetings or commands as a trigger to show the Web App button
+  if (['/start', '/menu', '/app', 'hi', 'hello', 'menu', 'app', 'chào'].includes(lowerText)) {
+    const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
+    const keyboard = new Keyboard()
+      .webApp('Launch Frameon AI App', webAppUrl)
+      .resized();
+
+    return ctx.reply('Welcome to Frameon AI! Open the app to select a template and generate your video, or just send me a topic directly.', {
+      reply_markup: keyboard,
+    });
+  }
+
+  const topic = text;
   const loadingMsg = await ctx.reply('🤖 Generating titles...');
 
   try {
@@ -144,7 +149,21 @@ bot.catch((err) => {
   console.error(err.error);
 });
 
-export const startBot = () => {
+export const startBot = async () => {
+  const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
+  try {
+    await bot.api.setChatMenuButton({
+      menu_button: {
+        type: 'web_app',
+        text: 'Mở App',
+        web_app: { url: webAppUrl }
+      }
+    });
+    console.log('✅ Menu button configured');
+  } catch (err) {
+    console.error('⚠️ Failed to set menu button:', err);
+  }
+
   bot.start();
   console.log('🤖 Bot started');
 };
