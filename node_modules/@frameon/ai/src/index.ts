@@ -10,7 +10,7 @@ export class AIGenerator {
   }
 
   async generateTitles(topic: string): Promise<string[]> {
-    const completion = await this.openai.beta.chat.completions.parse({
+    const completion = await (this.openai as any).beta.chat.completions.parse({
       model: 'gpt-4o-2024-08-06',
       messages: [
         {
@@ -33,7 +33,7 @@ export class AIGenerator {
   }
 
   async generateScript(title: string): Promise<Script> {
-    const completion = await this.openai.beta.chat.completions.parse({
+    const completion = await (this.openai as any).beta.chat.completions.parse({
       model: 'gpt-4o-2024-08-06',
       messages: [
         {

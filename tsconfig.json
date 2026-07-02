@@ -7,10 +7,19 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@frameon/*": ["packages/*/src", "apps/*/src"]
+    },
+    "types": ["node"]
   },
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "ts-node": {
+    "require": ["tsconfig-paths/register", "dotenv/config"]
+  }
 }

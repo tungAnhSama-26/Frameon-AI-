@@ -1,11 +1,14 @@
 import { Queue } from 'bullmq';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import IORedis from 'ioredis';
 import { prisma } from '@frameon/database';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
-const publishQueue = new Queue('video-publish', { connection });
+const publishQueue = new Queue('video-publish', { connection: connection as any });
 
 async function schedulePublishing() {
   console.log('Checking for videos to publish...');

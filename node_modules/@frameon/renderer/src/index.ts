@@ -16,7 +16,7 @@ export class VideoRenderer {
     await page.setContent(htmlContent);
 
     // Assuming the HTML template has a fixed duration or we calculate based on scenes
-    const durationSec = script.scenes.reduce((acc, scene) => acc + scene.duration, 0);
+    const durationSec = script.scenes.reduce((acc: number, scene: any) => acc + scene.duration, 0);
     const totalFrames = durationSec * this.fps;
 
     const stream = new PassThrough();
@@ -33,7 +33,7 @@ export class VideoRenderer {
           await browser.close();
           resolve(outputPath);
         })
-        .on('error', async (err) => {
+        .on('error', async (err: any) => {
           await browser.close();
           reject(err);
         })

@@ -1,3 +1,7 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
 import { Bot, InlineKeyboard } from 'grammy';
 import { AIGenerator } from '@frameon/ai';
 import { prisma } from '@frameon/database';
@@ -24,7 +28,7 @@ bot.on('message:text', async (ctx) => {
     const titles = await ai.generateTitles(topic);
     
     const keyboard = new InlineKeyboard();
-    titles.forEach((title, index) => {
+    titles.forEach((title: string, index: number) => {
       // Store topic and title index or just title in callback data (limited to 64 bytes)
       // For a real app, we'd store these in a temporary session or DB
       keyboard.text(title.substring(0, 30) + '...', `select_title:${index}`).row();
@@ -79,6 +83,8 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
       }
     });
 
+    if (!ctx.chat) return;
+
     await ctx.api.editMessageText(
       ctx.chat.id, 
       loadingMsg.message_id, 
@@ -89,7 +95,9 @@ bot.callbackQuery(/select_title:(\d+)/, async (ctx) => {
 
   } catch (error) {
     console.error(error);
-    await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Failed to generate script.');
+    if (ctx.chat) {
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '❌ Failed to generate script.');
+    }
   }
 });
 
