@@ -66,9 +66,21 @@ bot.on('message:text', async (ctx) => {
   }
 
   const topic = text;
-  const loadingMsg = await ctx.reply('🤖 Đang suy nghĩ tiêu đề...');
+  const loadingMsg = await ctx.reply('🤖 Đang phân tích yêu cầu...');
 
   try {
+    const intentData = await ai.classifyMessage(text);
+    
+    if (intentData.intent !== 'topic') {
+      await ctx.api.editMessageText(
+        ctx.chat.id, 
+        loadingMsg.message_id, 
+        intentData.reply || 'Cảm ơn bạn! Bạn có muốn tạo video về chủ đề gì không?'
+      );
+      return;
+    }
+
+    await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '🤖 Đang suy nghĩ tiêu đề...');
     const titles = await ai.generateTitles(topic);
     
     const keyboard = new InlineKeyboard();

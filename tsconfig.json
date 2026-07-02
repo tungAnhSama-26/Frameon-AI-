@@ -14,11 +14,13 @@
     "paths": {
       "@frameon/*": ["packages/*/src", "apps/*/src"]
     },
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx"
   },
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "apps/miniapp"
   ],
   "ts-node": {
     "require": ["tsconfig-paths/register", "dotenv/config"],

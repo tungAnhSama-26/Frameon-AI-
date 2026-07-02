@@ -30,6 +30,12 @@ export type TitleList = z.infer<typeof TitleSchema>;
 export type Scene = z.infer<typeof SceneSchema>;
 export type Script = z.infer<typeof ScriptSchema>;
 
+export const MessageIntentSchema = z.object({
+  intent: z.enum(['topic', 'chat', 'status', 'export']),
+  reply: z.string().optional(),
+});
+export type MessageIntent = z.infer<typeof MessageIntentSchema>;
+
 export const VideoRequestSchema = z.object({
   id: z.string(),
   userId: z.string(),
