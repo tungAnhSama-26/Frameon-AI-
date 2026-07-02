@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
-import { Bot, InlineKeyboard } from 'grammy';
+import { Bot, InlineKeyboard, Keyboard } from 'grammy';
 import { AIGenerator } from '@frameon/ai';
 import { prisma } from '@frameon/database';
 
@@ -19,8 +19,9 @@ const ai = new AIGenerator(openaiKey);
 bot.command('start', (ctx) => {
   const webAppUrl = process.env.WEBAPP_URL || 'https://frameon-ai.example.com';
   
-  const keyboard = new InlineKeyboard()
-    .webApp('Launch Frameon AI App', webAppUrl);
+  const keyboard = new Keyboard()
+    .webApp('Launch Frameon AI App', webAppUrl)
+    .resized();
 
   ctx.reply('Welcome to Frameon AI! Open the app to select a template and generate your video, or just send me a topic.', {
     reply_markup: keyboard,
