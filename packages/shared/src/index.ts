@@ -32,7 +32,7 @@ export type Script = z.infer<typeof ScriptSchema>;
 
 export const MessageIntentSchema = z.object({
   intent: z.enum(['topic', 'chat', 'status', 'export']),
-  reply: z.string().optional(),
+  reply: z.string().nullable(),
 });
 export type MessageIntent = z.infer<typeof MessageIntentSchema>;
 

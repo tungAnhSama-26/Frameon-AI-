@@ -7,15 +7,15 @@ import { AIGenerator } from '@frameon/ai';
 import { prisma } from '@frameon/database';
 
 const botToken = process.env.BOT_TOKEN || '';
-const geminiKey = process.env.GEMINI_API_KEY || '';
+const apiKey = process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || '';
 
-if (!botToken || !geminiKey) {
-  console.warn('BOT_TOKEN or GEMINI_API_KEY is missing');
+if (!botToken || !apiKey) {
+  console.warn('BOT_TOKEN or API Key is missing');
 }
 console.log('Using Bot Token:', botToken);
 
 const bot = new Bot(botToken);
-const ai = new AIGenerator(geminiKey);
+const ai = new AIGenerator(apiKey);
 
 
 
@@ -31,16 +31,19 @@ bot.on('message:web_app_data', async (ctx) => {
     try {
       const titles = await ai.generateTitles(topic);
       
+      let messageText = `👇 Vui lòng chọn một tiêu đề cho video của bạn:\n\n`;
       const keyboard = new InlineKeyboard();
       titles.forEach((title: string, index: number) => {
-        keyboard.text(title.substring(0, 30) + '...', `select_title:${index}`).row();
+        messageText += `*${index + 1}.* ${title}\n\n`;
+        keyboard.text(`👉 Chọn ${index + 1}`, `select_title:${index}`).row();
       });
 
       (global as any).tempTitles = titles;
       (global as any).tempTopic = topic;
 
-      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '👇 Vui lòng chọn một tiêu đề cho video của bạn:', {
+      await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, messageText, {
         reply_markup: keyboard,
+        parse_mode: 'Markdown'
       });
     } catch (error) {
       console.error(error);
@@ -82,19 +85,20 @@ bot.on('message:text', async (ctx) => {
     await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, '🤖 Đang suy nghĩ tiêu đề...');
     const titles = await ai.generateTitles(topic);
     
+    let messageText = '👇 Vui lòng chọn một tiêu đề cho video của bạn:\n\n';
     const keyboard = new InlineKeyboard();
     titles.forEach((title: string, index: number) => {
-      // Store topic and title index or just title in callback data (limited to 64 bytes)
-      // For a real app, we'd store these in a temporary session or DB
-      keyboard.text(title.substring(0, 30) + '...', `select_title:${index}`).row();
+      messageText += `*${index + 1}.* ${title}\n\n`;
+      keyboard.text(`👉 Chọn ${index + 1}`, `select_title:${index}`).row();
     });
 
     // Store in a simple map for demo purposes (use Redis/Session in prod)
     (global as any).tempTitles = titles;
     (global as any).tempTopic = topic;
 
-    await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, 'Select a title for your video:', {
+    await ctx.api.editMessageText(ctx.chat.id, loadingMsg.message_id, messageText, {
       reply_markup: keyboard,
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     console.error(error);

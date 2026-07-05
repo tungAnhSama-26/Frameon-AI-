@@ -11,6 +11,44 @@ import { Script } from '@frameon/shared';
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
+async function generateTTS(text: string, outputPath: string) {
+  const chunks = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const buffers = [];
+  for (let chunk of chunks) {
+    if (!chunk.trim()) continue;
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk.trim())}`;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        buffers.push(Buffer.from(await res.arrayBuffer()));
+      }
+    } catch (e) {
+      console.error('TTS Fetch Error', e);
+    }
+  }
+  if (buffers.length > 0) {
+    require('fs').writeFileSync(outputPath, Buffer.concat(buffers));
+    return true;
+  }
+  return false;
+}
+
+async function fetchImageBase64(prompt: string) {
+  try {
+    const enhancedPrompt = prompt + ", masterpiece, cinematic lighting, 8k resolution, highly detailed";
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1080&height=1920&nologo=true`;
+    console.log(`[Worker] Fetching image for: ${prompt}`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Fetch failed');
+    const buffer = await res.arrayBuffer();
+    return `data:image/jpeg;base64,${Buffer.from(buffer).toString('base64')}`;
+  } catch (e) {
+    console.error('Image Fetch Error', e);
+    // fallback gradient
+    return '';
+  }
+}
+
 const renderer = new VideoRenderer();
 
 const worker = new Worker('video-render', async (job: Job) => {
@@ -32,120 +70,102 @@ const worker = new Worker('video-render', async (job: Job) => {
     // For demo purposes, we build a simple HTML here. In reality, it calls @frameon/templates
     const script = video.script as unknown as Script;
     
+    console.log(`[Worker] Downloading scene images...`);
+    const scenesWithImages = [];
+    for (const scene of script.scenes) {
+      const b64 = await fetchImageBase64(scene.visualPrompt || scene.text);
+      scenesWithImages.push({ ...scene, b64 });
+    }
+
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
         <style>
-          body { 
-            margin: 0; padding: 0; 
-            background: linear-gradient(135deg, #1e003b 0%, #4a00e0 50%, #8e2de2 100%);
-            color: #fff; 
-            font-family: 'Inter', sans-serif; 
-            display: flex; align-items: center; justify-content: center; 
-            height: 100vh; width: 100vw;
-            text-align: center;
-            overflow: hidden;
-            position: relative;
+          body { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: 'Montserrat', sans-serif; }
+          .scene {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            opacity: 0; transition: opacity 0.8s ease;
+            background-size: cover; background-position: center;
           }
-          .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 40px;
-            padding: 80px 60px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.2);
-            width: 80%;
-            transform: scale(0.8);
-            opacity: 0;
+          .scene.active { opacity: 1; }
+          .subtitle-container {
+            position: absolute; bottom: 15%; left: 8%; right: 8%;
+            text-align: center; z-index: 100;
           }
-          h1 { 
-            font-family: 'Montserrat', sans-serif;
-            font-size: 85px; 
-            font-weight: 900;
-            margin-bottom: 40px;
+          .subtitle {
+            color: #fff;
+            font-size: 55px;
+            font-weight: 800;
+            line-height: 1.4;
             text-transform: uppercase;
-            background: linear-gradient(to right, #f8ff00, #3ad59f);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.2;
+            text-shadow: 0px 4px 20px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.8);
+            letter-spacing: 2px;
           }
-          p { 
-            font-size: 55px; 
-            line-height: 1.5;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-            font-weight: 600;
+          .overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+            z-index: 50;
           }
-          
-          /* Particles */
-          .particle {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.5;
+          .progress-bar {
+            position: absolute; top: 0; left: 0; height: 10px; background: #FFD700; z-index: 200; width: 0%;
           }
         </style>
       </head>
       <body>
-        <!-- Background particles -->
-        <div id="particles"></div>
+        ${scenesWithImages.map((scene: any, i: number) => `
+          <div class="scene" id="scene-${i}" style="${scene.b64 ? `background-image: url('${scene.b64}');` : 'background: linear-gradient(45deg, #2b1f4a, #1a365d);'}"></div>
+        `).join('')}
         
-        <div class="glass-panel" id="panel">
-          <h1 id="title">${script.title.replace(/"/g, '&quot;')}</h1>
-          <p id="hook">${script.hook.replace(/"/g, '&quot;')}</p>
+        <div class="overlay"></div>
+        
+        <div class="subtitle-container">
+          <div class="subtitle" id="subtitle">${script.title}</div>
         </div>
+        <div class="progress-bar" id="progress"></div>
 
         <script>
-          // Create background particles
-          const particlesContainer = document.getElementById('particles');
-          const particles = [];
-          for(let i=0; i<30; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            const size = Math.random() * 15 + 5;
-            p.style.width = size + 'px';
-            p.style.height = size + 'px';
-            const x = Math.random() * window.innerWidth;
-            const y = Math.random() * window.innerHeight;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-            particlesContainer.appendChild(p);
-            particles.push({ element: p, x, y, speedY: - (Math.random() * 50 + 20) });
-          }
-
+          const scenesData = ${JSON.stringify(scenesWithImages)};
+          const totalDuration = scenesData.reduce((acc, s) => acc + s.duration, 0);
+          
           window.seekTo = function(time) {
-            // time is in seconds
-            const panel = document.getElementById('panel');
+            let currentTime = 0;
+            let activeIndex = scenesData.length - 1;
+            let sceneStartTime = 0;
             
-            // Animation logic for panel (fade in + scale up in first 1 second)
-            if (time < 1) {
-              const progress = time; // 0 to 1
-              // Easing function (easeOutQuad)
-              const ease = 1 - (1 - progress) * (1 - progress);
-              panel.style.opacity = ease;
-              panel.style.transform = \`scale(\${0.8 + ease * 0.2})\`; // scale from 0.8 to 1.0
-            } else {
-              panel.style.opacity = 1;
-              panel.style.transform = 'scale(1)';
-            }
-            
-            // Subtle floating effect for panel after intro
-            if (time >= 1) {
-              const floatOffset = Math.sin(time * 2) * 15;
-              panel.style.transform = \`scale(1) translateY(\${floatOffset}px)\`;
+            for (let i = 0; i < scenesData.length; i++) {
+              if (time >= currentTime && time < currentTime + scenesData[i].duration) {
+                activeIndex = i;
+                sceneStartTime = currentTime;
+                break;
+              }
+              currentTime += scenesData[i].duration;
             }
 
-            // Animate particles
-            particles.forEach(p => {
-              // Calculate new Y based on time and speed
-              let currentY = p.y + (p.speedY * time);
-              // Wrap around screen
-              currentY = currentY % window.innerHeight;
-              if (currentY < 0) currentY += window.innerHeight;
-              
-              p.element.style.transform = \`translateY(\${currentY - p.y}px)\`;
+            // Update active scene and Ken Burns effect
+            document.querySelectorAll('.scene').forEach((el, idx) => {
+              if (idx === activeIndex) {
+                el.classList.add('active');
+                // Ken Burns logic: Scale up from 1.0 to 1.15 over the duration
+                const elapsedInScene = time - sceneStartTime;
+                const progress = elapsedInScene / scenesData[activeIndex].duration;
+                const scale = 1.0 + (progress * 0.15);
+                el.style.transform = \`scale(\${scale})\`;
+              } else {
+                el.classList.remove('active');
+                el.style.transform = 'scale(1.0)';
+              }
             });
+            
+            // Update subtitle
+            const subtitleEl = document.getElementById('subtitle');
+            if (subtitleEl.innerText !== scenesData[activeIndex].text) {
+              subtitleEl.innerText = scenesData[activeIndex].text;
+            }
+            
+            // Update progress bar
+            document.getElementById('progress').style.width = \`\${(time / totalDuration) * 100}%\`;
           };
         </script>
       </body>
@@ -154,8 +174,13 @@ const worker = new Worker('video-render', async (job: Job) => {
 
     const os = require('os');
     const outputPath = path.join(os.tmpdir(), `${videoId}.mp4`);
+    const audioPath = path.join(os.tmpdir(), `${videoId}.mp3`);
     
-    await renderer.render(script, html, outputPath);
+    console.log(`[Worker] Generating TTS audio...`);
+    const hasAudio = await generateTTS(script.narration, audioPath);
+    
+    console.log(`[Worker] Rendering video ${hasAudio ? 'with audio' : 'without audio'}...`);
+    await renderer.render(script, html, outputPath, hasAudio ? audioPath : undefined);
 
     await prisma.video.update({
       where: { id: videoId },

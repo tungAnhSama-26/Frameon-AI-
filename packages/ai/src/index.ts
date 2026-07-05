@@ -5,16 +5,19 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 export class AIGenerator {
   private openai: OpenAI;
 
+  private isGemini: boolean;
+
   constructor(apiKey: string) {
+    this.isGemini = apiKey.startsWith('AIza') || !apiKey.startsWith('sk-');
     this.openai = new OpenAI({ 
       apiKey,
-      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+      ...(this.isGemini ? { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' } : {})
     });
   }
 
   async classifyMessage(message: string): Promise<MessageIntent> {
     const completion = await this.openai.chat.completions.parse({
-      model: 'gemini-2.5-flash',
+      model: this.isGemini ? 'gemini-2.5-flash' : 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -37,7 +40,7 @@ export class AIGenerator {
 
   async generateTitles(topic: string): Promise<string[]> {
     const completion = await this.openai.chat.completions.parse({
-      model: 'gemini-2.5-flash',
+      model: this.isGemini ? 'gemini-2.5-flash' : 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -60,7 +63,7 @@ export class AIGenerator {
 
   async generateScript(title: string): Promise<Script> {
     const completion = await this.openai.chat.completions.parse({
-      model: 'gemini-2.5-flash',
+      model: this.isGemini ? 'gemini-2.5-flash' : 'gpt-4o-mini',
       messages: [
         {
           role: 'system',

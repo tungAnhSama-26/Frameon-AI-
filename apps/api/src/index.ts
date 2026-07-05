@@ -7,7 +7,7 @@ import cors from '@fastify/cors';
 import { prisma } from '@frameon/database';
 import { AIGenerator } from '@frameon/ai';
 
-const ai = new AIGenerator(process.env.GEMINI_API_KEY || '');
+const ai = new AIGenerator(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || '');
 
 const fastify = Fastify({
   logger: true
